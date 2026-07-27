@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: stg_salesorderheader
+    description: "Tabela base de cabeçalho dos pedidos gerada pelo ERP."
+    columns:
+      - name: SalesOrderID
+        description: "Chave primária do pedido."
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_salesorderdetail
+    description: "Tabela base com os itens/produtos contidos em cada pedido."
+    columns:
+      - name: SalesOrderDetailID
+        description: "Chave primária do detalhe do pedido."
+        tests:
+          - unique
+          - not_null
+      - name: SalesOrderID
+        description: "Chave estrangeira relacionando ao cabeçalho."
+        tests:
+          - not_null
+
+  - name: stg_product
+    description: "Tabela base do cadastro de produtos."
+    columns:
+      - name: ProductID
+        description: "Chave primária do produto."
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_customer
+    description: "Tabela base de clientes do Adventure Works."
+    columns:
+      - name: CustomerID
+        description: "Chave primária do cliente."
+        tests:
+          - unique
+          - not_null
