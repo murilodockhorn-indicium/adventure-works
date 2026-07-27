@@ -1,0 +1,72 @@
+version: 2
+
+models:
+  - name: fact_sales
+    description: "Tabela Fato principal de vendas. Contém as métricas financeiras no nível mais granular (linha do detalhe do pedido)."
+    columns:
+      - name: SalesOrderDetailID
+        description: "Chave primária (Primary Key) do detalhe do pedido."
+        tests:
+          - unique
+          - not_null
+      - name: SalesOrderID
+        description: "Chave estrangeira (Foreign Key) para o cabeçalho do pedido."
+        tests:
+          - not_null
+      - name: ProductID
+        description: "Chave de ligação com a dimensão de produto."
+        tests:
+          - not_null
+      - name: CustomerID
+        description: "Chave de ligação com a dimensão de cliente."
+        tests:
+          - not_null
+      - name: GrossAmount
+        description: "Faturamento Bruto da linha do pedido (Quantidade * Preço Unitário)."
+      - name: NetAmount
+        description: "Faturamento Líquido (descontos aplicados)."
+
+  - name: dim_product
+    description: "Dimensão de produtos, contendo os detalhes e o nome real dos itens comercializados."
+    columns:
+      - name: ProductID
+        description: "Chave primária do produto."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_customer
+    description: "Dimensão de clientes, contendo o nome consolidado das pessoas ou lojas."
+    columns:
+      - name: CustomerID
+        description: "Chave primária do cliente."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_location
+    description: "Dimensão de localização geográfica cruzando cidade, estado e país do endereço de envio."
+    columns:
+      - name: AddressID
+        description: "Chave primária do endereço, ligada à LocationID na tabela Fato."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_creditcard
+    description: "Dimensão com os dados descritivos dos cartões de crédito usados nas compras."
+    columns:
+      - name: CreditCardID
+        description: "Chave primária do cartão de crédito."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_salesreason
+    description: "Dimensão com os motivos que levaram à venda (Ex: Promoção, Marketing, Preço)."
+    columns:
+      - name: SalesReasonID
+        description: "Chave primária do motivo de venda."
+        tests:
+          - unique
+          - not_null
