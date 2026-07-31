@@ -2,17 +2,13 @@
     catalog = 'workspace'
 ) }}
 
-{% test soma_faturamento(model, column_name, ano, valor_esperado) %}
-
 WITH calculo AS (
-    SELECT 
-        ROUND(CAST(SUM({{ column_name }}) AS numeric), 2) AS total_calculado
-    FROM {{ model }}
-    WHERE YEAR(OrderDate) = {{ ano }}
+    SELECT
+        ROUND(CAST(SUM(GrossAmount) AS numeric), 2) AS total_calculado
+    FROM {{ ref('fact_sales') }}
+    WHERE YEAR(OrderDate) = 2011
 )
 
-SELECT * 
-FROM calculo 
-WHERE total_calculado != {{ valor_esperado }}
-
-{% endtest %}
+SELECT *
+FROM calculo
+WHERE total_calculado != 12646112.16

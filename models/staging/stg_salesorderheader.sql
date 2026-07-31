@@ -1,41 +1,53 @@
 {{ config(
-    catalog = 'workspace'
+    materialized = 'view'
 ) }}
 
-WITH source AS (
-    SELECT * 
-    FROM workspace.adventure_works.salesorderheader
+with source_data as (
+    select 
+        _c0, _c1, _c2, _c3, _c4, _c5, _c6, _c7, _c8, _c9, _c10, 
+        _c11, _c12, _c13, _c14, _c15, _c16, _c17, _c18, _c19, 
+        _c20, _c21, _c22, _c23, _c24, _c25
+    from {{ source('adventure_works', 'salesorderheader') }}
 ),
 
-renamed AS (
-    SELECT
-        CAST(_c0  AS INT) AS SalesOrderID,
-        CAST(_c1  AS INT) AS RevisionNumber,
-        CAST(_c2  AS TIMESTAMP) AS OrderDate,
-        CAST(_c3  AS TIMESTAMP) AS DueDate,
-        CAST(_c4  AS TIMESTAMP) AS ShipDate,
-        CAST(_c5  AS INT) AS Status,
-        CAST(_c6  AS BOOLEAN) AS OnlineOrderFlag,
-        CAST(_c7  AS STRING) AS SalesOrderNumber,
-        CAST(_c8  AS STRING) AS PurchaseOrderNumber,
-        CAST(_c9  AS STRING) AS AccountNumber,
-        CAST(_c10 AS INT) AS CustomerID,
-        CAST(_c11 AS INT) AS SalesPersonID,
-        CAST(_c12 AS INT) AS TerritoryID,
-        CAST(_c13 AS INT) AS BillToAddressID,
-        CAST(_c14 AS INT) AS ShipToAddressID,
-        CAST(_c15 AS INT) AS ShipMethodID,
-        CAST(_c16 AS INT) AS CreditCardID,
-        CAST(_c17 AS STRING) AS CreditCardApprovalCode,
-        CAST(_c18 AS INT) AS CurrencyRateID,
-        CAST(_c19 AS DECIMAL(18,4)) AS SubTotal,
-        CAST(_c20 AS DECIMAL(18,4)) AS TaxAmt,
-        CAST(_c21 AS DECIMAL(18,4)) AS Freight,
-        CAST(_c22 AS DECIMAL(18,4)) AS TotalDue,
-        CAST(_c23 AS STRING) AS Comment,
-        CAST(_c24 AS STRING) AS rowguid,
-        CAST(_c25 AS TIMESTAMP) AS ModifiedDate
-    FROM source
+renamed_and_casted as (
+    select
+        cast(_c0  as int) as SalesOrderID,
+        cast(_c1  as int) as RevisionNumber,
+        cast(_c2  as timestamp) as OrderDate,
+        cast(_c3  as timestamp) as DueDate,
+        cast(_c4  as timestamp) as ShipDate,
+        cast(_c5  as int) as Status,
+        cast(_c6  as boolean) as OnlineOrderFlag,
+        cast(_c7  as string) as SalesOrderNumber,
+        cast(_c8  as string) as PurchaseOrderNumber,
+        cast(_c9  as string) as AccountNumber,
+        cast(_c10 as int) as CustomerID,
+        cast(_c11 as int) as SalesPersonID,
+        cast(_c12 as int) as TerritoryID,
+        cast(_c13 as int) as BillToAddressID,
+        cast(_c14 as int) as ShipToAddressID,
+        cast(_c15 as int) as ShipMethodID,
+        cast(_c16 as int) as CreditCardID,
+        cast(_c17 as string) as CreditCardApprovalCode,
+        cast(_c18 as int) as CurrencyRateID,
+        cast(_c19 as decimal(18,4)) as SubTotal,
+        cast(_c20 as decimal(18,4)) as TaxAmt,
+        cast(_c21 as decimal(18,4)) as Freight,
+        cast(_c22 as decimal(18,4)) as TotalDue,
+        cast(_c23 as string) as Comment,
+        cast(_c24 as string) as rowguid,
+        cast(_c25 as timestamp) as ModifiedDate
+    from source_data
+),
+
+deduplicated_data as (
+    select 
+        *
+    from renamed_and_casted
+    -- DOCUMENTAÇÃO/SEGURANÇA: Aplicação de dedup para garantir a unicidade da PK (SalesOrderID).
+    -- Mantemos o registro mais recente (última modificação) em caso de atualização/duplicidade pelo ERP.
+    qualify row_number() over (partition by SalesOrderID order by ModifiedDate desc) = 1
 )
 
-SELECT * FROM renamed
+select * from deduplicated_data

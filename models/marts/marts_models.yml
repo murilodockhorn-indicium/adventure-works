@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: fact_sales
+  - name: fact_sales  # Ajustado de fact_sales para bater com fct_sales.sql
     description: "Tabela Fato principal de vendas. Contém as métricas financeiras no nível mais granular (linha do detalhe do pedido)."
     columns:
       - name: SalesOrderDetailID
@@ -9,22 +9,58 @@ models:
         tests:
           - unique
           - not_null
+
       - name: SalesOrderID
         description: "Chave estrangeira (Foreign Key) para o cabeçalho do pedido."
         tests:
           - not_null
+
       - name: ProductID
         description: "Chave de ligação com a dimensão de produto."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_product')
+              field: ProductID
+
       - name: CustomerID
         description: "Chave de ligação com a dimensão de cliente."
         tests:
           - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: CustomerID
+
+      - name: LocationID
+        description: "Chave de ligação com a dimensão de localização."
+        tests:
+          - relationships:
+              to: ref('dim_location')
+              field: AddressID
+
+      - name: CreditCardID
+        description: "Chave de ligação com a dimensão de cartão de crédito."
+        tests:
+          - relationships:
+              to: ref('dim_creditcard')
+              field: CreditCardID
+
+      - name: SalesReasonID
+        description: "Chave de ligação com a dimensão de motivo de venda."
+        tests:
+          - relationships:
+              to: ref('dim_salesreason')
+              field: SalesReasonID
+
       - name: GrossAmount
         description: "Faturamento Bruto da linha do pedido (Quantidade * Preço Unitário)."
+        tests:
+          - not_null
+
       - name: NetAmount
         description: "Faturamento Líquido (descontos aplicados)."
+        tests:
+          - not_null
 
   - name: dim_product
     description: "Dimensão de produtos, contendo os detalhes e o nome real dos itens comercializados."

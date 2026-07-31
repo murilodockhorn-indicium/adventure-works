@@ -1,24 +1,35 @@
 {{ config(
-    catalog = 'workspace'
+    materialized = 'view'
 ) }}
 
-WITH source AS (
-    SELECT * 
-    FROM workspace.adventure_works.address
+with source_data as (
+    select 
+        _c0, _c1, _c2, _c3, 
+        _c4, _c5, _c6, _c7, _c8
+    from {{ source('adventure_works', 'address') }}
 ),
 
-renamed AS (
-    SELECT
-        CAST(_c0 AS INT) AS AddressID,
-        CAST(_c1 AS STRING) AS AddressLine1,
-        CAST(_c2 AS STRING) AS AddressLine2,
-        CAST(_c3 AS STRING) AS City,
-        CAST(_c4 AS INT) AS StateProvinceID,
-        CAST(_c5 AS STRING) AS PostalCode,
-        CAST(_c6 AS STRING) AS SpatialLocation,
-        CAST(_c7 AS STRING) AS rowguid,
-        CAST(_c8 AS TIMESTAMP) AS ModifiedDate
-    FROM source
+renamed_and_casted as (
+    select
+        cast(_c0 as int) as AddressID,
+        cast(_c1 as string) as AddressLine1,
+        cast(_c2 as string) as AddressLine2,
+        cast(_c3 as string) as City,
+        cast(_c4 as int) as StateProvinceID,
+        cast(_c5 as string) as PostalCode,
+        cast(_c6 as string) as SpatialLocation,
+        cast(_c7 as string) as rowguid,
+        cast(_c8 as timestamp) as ModifiedDate
+    from source_data
+),
+
+deduplicated_data as (
+    select 
+        *
+    from renamed_and_casted
+    -- DOCUMENTAÇÃO/SEGURANÇA: Aplicação de dedup para garantir a unicidade da PK (AddressID).
+    -- Caso o ERP envie o mesmo endereço duplicado, mantemos apenas o com a data de modificação mais recente.
+    qualify row_number() over (partition by AddressID order by ModifiedDate desc) = 1
 )
 
-SELECT * FROM renamed
+select * from deduplicated_data

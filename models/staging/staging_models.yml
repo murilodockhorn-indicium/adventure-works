@@ -2,41 +2,71 @@ version: 2
 
 models:
   - name: stg_salesorderheader
-    description: "Tabela base de cabeçalho dos pedidos gerada pelo ERP."
+    description: "Tabela base de cabeçalho dos pedidos gerada pelo ERP. Contém informações a nível de pedido, como datas e cliente."
     columns:
       - name: SalesOrderID
-        description: "Chave primária do pedido."
+        description: "Identificador único do pedido gerado pelo sistema. Utilizado para cruzar com os itens na stg_salesorderdetail."
         tests:
           - unique
           - not_null
 
   - name: stg_salesorderdetail
-    description: "Tabela base com os itens/produtos contidos em cada pedido."
+    description: "Tabela granular com os itens (produtos) contidos em cada pedido."
     columns:
       - name: SalesOrderDetailID
-        description: "Chave primária do detalhe do pedido."
+        description: "Identificador único da linha do pedido. Uma mesma SalesOrderID pode ter múltiplos SalesOrderDetailID."
         tests:
           - unique
           - not_null
       - name: SalesOrderID
-        description: "Chave estrangeira relacionando ao cabeçalho."
+        description: "Chave estrangeira que conecta o item ao seu respectivo cabeçalho. Relaciona-se com a stg_salesorderheader."
         tests:
           - not_null
+          - relationships:
+              to: ref('stg_salesorderheader')
+              field: SalesOrderID
 
   - name: stg_product
-    description: "Tabela base do cadastro de produtos."
+    description: "Tabela base do cadastro de produtos comercializados pela Adventure Works."
     columns:
       - name: ProductID
-        description: "Chave primária do produto."
+        description: "Chave primária do produto. Utilizada como chave estrangeira nas tabelas de fatos de vendas para buscar dimensões de produto."
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_creditcard
+    description: "Tabela de cartões de crédito dos clientes."
+    columns:
+      - name: CreditCardID
+        description: "Chave primária do cartão de crédito."
         tests:
           - unique
           - not_null
 
   - name: stg_customer
-    description: "Tabela base de clientes do Adventure Works."
+    description: "Tabela de clientes da Adventure Works."
     columns:
       - name: CustomerID
-        description: "Chave primária do cliente."
+        description: "Identificador único do cliente."
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_person
+    description: "Tabela com os dados pessoais (nome, sobrenome) vinculados a clientes ou funcionários."
+    columns:
+      - name: BusinessEntityID
+        description: "Chave primária da pessoa."
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_stateprovince
+    description: "Tabela de estados e províncias."
+    columns:
+      - name: StateProvinceID
+        description: "Chave primária do estado/província."
         tests:
           - unique
           - not_null
