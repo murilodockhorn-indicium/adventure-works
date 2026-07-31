@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: adventure_works
+    database: mesh_dev_db
+    schema: dev_murilo_dockhorn
+    tables:
+      - name: salesorderheader
+      - name: salesorderdetail
+      - name: product
+      - name: customer
+      - name: address
+      - name: countryregion
+      - name: creditcard
+      - name: person
+      - name: salesorderheadersalesreason
+      - name: salesreason
+      - name: stateprovince

@@ -1,9 +1,15 @@
-{{ config(catalog = 'workspace') }}
+{{ config(
+    materialized = 'table'
+) }}
 
-SELECT
-    ProductID,
-    Name AS ProductName,
-    ProductNumber,
-    MakeFlag,
-    FinishedGoodsFlag
-FROM {{ ref('stg_product') }}
+with stg_product as (
+    select
+        ProductID,
+        Name as ProductName,
+        ProductNumber,
+        MakeFlag,
+        FinishedGoodsFlag
+    from {{ ref('stg_product') }}
+)
+
+select * from stg_product

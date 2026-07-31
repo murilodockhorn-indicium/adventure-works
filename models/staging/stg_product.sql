@@ -1,40 +1,52 @@
 {{ config(
-    catalog = 'workspace'
+    materialized = 'view'
 ) }}
 
-WITH source AS (
-    SELECT * 
-    FROM workspace.adventure_works.product
+with source_data as (
+    select 
+        _c0, _c1, _c2, _c3, _c4, _c5, _c6, _c7, _c8, _c9, _c10, 
+        _c11, _c12, _c13, _c14, _c15, _c16, _c17, _c18, _c19, 
+        _c20, _c21, _c22, _c23, _c24
+    from {{ source('adventure_works', 'product') }}
 ),
 
-renamed AS (
-    SELECT
-        CAST(_c0 AS INT) AS ProductID,
-        CAST(_c1 AS STRING) AS Name,
-        CAST(_c2 AS STRING) AS ProductNumber,
-        CAST(_c3 AS BOOLEAN) AS MakeFlag,
-        CAST(_c4 AS BOOLEAN) AS FinishedGoodsFlag,
-        CAST(_c5 AS STRING) AS Color,
-        CAST(_c6 AS INT) AS SafetyStockLevel,
-        CAST(_c7 AS INT) AS ReorderPoint,
-        CAST(_c8 AS DECIMAL(18,4)) AS StandardCost,
-        CAST(_c9 AS DECIMAL(18,4)) AS ListPrice,
-        CAST(_c10 AS STRING) AS Size,
-        CAST(_c11 AS STRING) AS SizeUnitMeasureCode,
-        CAST(_c12 AS STRING) AS WeightUnitMeasureCode,
-        CAST(_c13 AS DECIMAL(18,2)) AS Weight,
-        CAST(_c14 AS INT) AS DaysToManufacture,
-        CAST(_c15 AS STRING) AS ProductLine,
-        CAST(_c16 AS STRING) AS Class,
-        CAST(_c17 AS STRING) AS Style,
-        CAST(_c18 AS INT) AS ProductSubcategoryID,
-        CAST(_c19 AS INT) AS ProductModelID,
-        CAST(_c20 AS TIMESTAMP) AS SellStartDate,
-        CAST(_c21 AS TIMESTAMP) AS SellEndDate,
-        CAST(_c22 AS TIMESTAMP) AS DiscontinuedDate,
-        CAST(_c23 AS STRING) AS rowguid,
-        CAST(_c24 AS TIMESTAMP) AS ModifiedDate
-    FROM source
+renamed_and_casted as (
+    select
+        cast(_c0 as int) as ProductID,
+        cast(_c1 as string) as Name,
+        cast(_c2 as string) as ProductNumber,
+        cast(_c3 as boolean) as MakeFlag,
+        cast(_c4 as boolean) as FinishedGoodsFlag,
+        cast(_c5 as string) as Color,
+        cast(_c6 as int) as SafetyStockLevel,
+        cast(_c7 as int) as ReorderPoint,
+        cast(_c8 as decimal(18,4)) as StandardCost,
+        cast(_c9 as decimal(18,4)) as ListPrice,
+        cast(_c10 as string) as Size,
+        cast(_c11 as string) as SizeUnitMeasureCode,
+        cast(_c12 as string) as WeightUnitMeasureCode,
+        cast(_c13 as decimal(18,2)) as Weight,
+        cast(_c14 as int) as DaysToManufacture,
+        cast(_c15 as string) as ProductLine,
+        cast(_c16 as string) as Class,
+        cast(_c17 as string) as Style,
+        cast(_c18 as int) as ProductSubcategoryID,
+        cast(_c19 as int) as ProductModelID,
+        cast(_c20 as timestamp) as SellStartDate,
+        cast(_c21 as timestamp) as SellEndDate,
+        cast(_c22 as timestamp) as DiscontinuedDate,
+        cast(_c23 as string) as rowguid,
+        cast(_c24 as timestamp) as ModifiedDate
+    from source_data
+),
+
+deduplicated_data as (
+    select 
+        *
+    from renamed_and_casted
+    -- DOCUMENTAÇÃO/SEGURANÇA: Aplicação de dedup para garantir a unicidade da PK (ProductID).
+    -- Mantemos o registro mais recente em caso de duplicidade na origem.
+    qualify row_number() over (partition by ProductID order by ModifiedDate desc) = 1
 )
 
-SELECT * FROM renamed
+select * from deduplicated_data

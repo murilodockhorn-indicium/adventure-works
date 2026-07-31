@@ -1,22 +1,33 @@
 {{ config(
-    catalog = 'workspace'
+    materialized = 'view'
 ) }}
 
-WITH source AS (
-    SELECT * 
-    FROM workspace.adventure_works.customer
+with source_data as (
+    select 
+        _c0, _c1, _c2, _c3, 
+        _c4, _c5, _c6
+    from {{ source('adventure_works', 'customer') }}
 ),
 
-renamed AS (
-    SELECT
-        CAST(_c0 AS INT) AS CustomerID,
-        CAST(_c1 AS INT) AS PersonID,
-        CAST(_c2 AS INT) AS StoreID,
-        CAST(_c3 AS INT) AS TerritoryID,
-        CAST(_c4 AS STRING) AS AccountNumber,
-        CAST(_c5 AS STRING) AS rowguid,
-        CAST(_c6 AS TIMESTAMP) AS ModifiedDate
-    FROM source
+renamed_and_casted as (
+    select
+        cast(_c0 as int) as CustomerID,
+        cast(_c1 as int) as PersonID,
+        cast(_c2 as int) as StoreID,
+        cast(_c3 as int) as TerritoryID,
+        cast(_c4 as string) as AccountNumber,
+        cast(_c5 as string) as rowguid,
+        cast(_c6 as timestamp) as ModifiedDate
+    from source_data
+),
+
+deduplicated_data as (
+    select 
+        *
+    from renamed_and_casted
+    -- DOCUMENTAÇÃO/SEGURANÇA: Aplicação de dedup para garantir a unicidade da PK (CustomerID).
+    -- Mantemos o registro mais recente (última atualização) caso o ERP envie o cliente em duplicidade.
+    qualify row_number() over (partition by CustomerID order by ModifiedDate desc) = 1
 )
 
-SELECT * FROM renamed
+select * from deduplicated_data

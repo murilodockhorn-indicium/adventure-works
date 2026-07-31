@@ -1,7 +1,13 @@
-{{ config(catalog = 'workspace') }}
+{{ config(
+    materialized = 'table'
+) }}
 
-SELECT
-    SalesReasonID,
-    Name AS ReasonName,
-    ReasonType
-FROM {{ ref('stg_salesreason') }}
+with stg_salesreason as (
+    select
+        SalesReasonID,
+        Name as ReasonName,
+        ReasonType
+    from {{ ref('stg_salesreason') }}
+)
+
+select * from stg_salesreason

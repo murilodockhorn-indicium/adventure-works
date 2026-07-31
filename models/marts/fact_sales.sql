@@ -1,57 +1,78 @@
 {{ config(
-    catalog = 'workspace'
+    materialized = 'table'
 ) }}
 
-WITH sales_detail AS (
-    SELECT * FROM {{ ref('stg_salesorderdetail') }}
-),
-
-sales_header AS (
-    SELECT * FROM {{ ref('stg_salesorderheader') }}
-),
-
--- Trazendo o motivo da venda (Sales Reason)
--- Como um pedido pode ter mais de um motivo, usamos LISTAGG (ou string_agg dependendo do banco) 
--- para não duplicar linhas e bagunçar as métricas financeiras.
-sales_reason AS (
-    SELECT 
+with sales_detail as (
+    select
+        SalesOrderDetailID,
         SalesOrderID,
-        MAX(SalesReasonID) AS PrimarySalesReasonID
-    FROM {{ ref('stg_salesorderheadersalesreason') }}
-    GROUP BY SalesOrderID
+        ProductID,
+        OrderQty,
+        UnitPrice,
+        UnitPriceDiscount,
+        LineTotal
+    from {{ ref('stg_salesorderdetail') }}
+),
+
+sales_header as (
+    select
+        SalesOrderID,
+        CustomerID,
+        CreditCardID,
+        BillToAddressID,
+        OrderDate,
+        DueDate,
+        ShipDate,
+        Status,
+        OnlineOrderFlag
+    from {{ ref('stg_salesorderheader') }}
+),
+
+sales_reason_agg as (
+    select 
+        SalesOrderID,
+        max(SalesReasonID) as PrimarySalesReasonID
+    from {{ ref('stg_salesorderheadersalesreason') }}
+    group by SalesOrderID
+),
+
+final as (
+    select
+        -- Chaves (IDs) para plugar nas Dimensões
+        d.SalesOrderDetailID,
+        h.SalesOrderID,
+        h.CustomerID,
+        h.CreditCardID,
+        h.BillToAddressID as LocationID, 
+        d.ProductID,
+        r.PrimarySalesReasonID as SalesReasonID,
+
+        -- Datas
+        h.OrderDate,
+        h.DueDate,
+        h.ShipDate,
+
+        -- Categorias da Fato
+        h.Status,
+        h.OnlineOrderFlag,
+
+        -- Métricas (O que vamos somar e fazer médias no BI)
+        d.OrderQty,
+        d.UnitPrice,
+        d.UnitPriceDiscount,
+        d.LineTotal,
+        
+        -- Faturamento Bruto (Quantidade * Preço Unitário sem considerar desconto)
+        (d.OrderQty * d.UnitPrice) as GrossAmount,
+        
+        -- Faturamento Líquido
+        (d.OrderQty * d.UnitPrice * (1 - d.UnitPriceDiscount)) as NetAmount
+        
+    from sales_detail d
+    left join sales_header h 
+        on d.SalesOrderID = h.SalesOrderID
+    left join sales_reason_agg r 
+        on h.SalesOrderID = r.SalesOrderID
 )
 
-SELECT
-    -- Chaves (IDs) para plugar nas Dimensões
-    d.SalesOrderDetailID,
-    h.SalesOrderID,
-    h.CustomerID,
-    h.CreditCardID,
-    h.BillToAddressID AS LocationID, -- Chave para a dim_location
-    d.ProductID,
-    r.PrimarySalesReasonID AS SalesReasonID,
-
-    -- Datas
-    h.OrderDate,
-    h.DueDate,
-    h.ShipDate,
-
-    -- Categorias da Fato
-    h.Status,
-    h.OnlineOrderFlag,
-
-    -- Métricas (O que vamos somar e fazer médias no BI)
-    d.OrderQty,
-    d.UnitPrice,
-    d.UnitPriceDiscount,
-    d.LineTotal,
-    -- Faturamento Bruto (Quantidade * Preço Unitário sem considerar desconto)
-    (d.OrderQty * d.UnitPrice) AS GrossAmount,
-    -- Faturamento Líquido
-    (d.OrderQty * d.UnitPrice * (1 - d.UnitPriceDiscount)) AS NetAmount
-
-FROM sales_detail d
-LEFT JOIN sales_header h 
-    ON d.SalesOrderID = h.SalesOrderID
-LEFT JOIN sales_reason r 
-    ON h.SalesOrderID = r.SalesOrderID
+select * from final
