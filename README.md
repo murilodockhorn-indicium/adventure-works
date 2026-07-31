@@ -58,3 +58,18 @@ Para visualizar a documentação localmente:
    ```bash
    dbt docs generate
    dbt docs serve
+
+---
+
+## 🗺️ Modelagem Conceitual
+
+Antes do desenvolvimento no dbt, a arquitetura de dados foi desenhada em um Diagrama Conceitual, mapeando a linhagem das tabelas transacionais (PostgreSQL) até o modelo dimensional (Star Schema). 
+* O arquivo PDF detalhando as chaves (PK/FK) e as colunas calculadas está disponível na raiz do projeto.
+
+---
+
+## 📈 Análise Exploratória e BI (Em Desenvolvimento)
+
+Além da infraestrutura de dados, este projeto contempla a entrega de valor direto para a área de negócios:
+1. **Análise Exploratória de Dados (EDA):** Identificação de padrões, anomalias e insights preliminares.
+2. **Dashboard Gerencial:** Desenvolvimento de um painel interativo (Power BI / Databricks AI/BI) para responder às perguntas de negócio da Diretoria Comercial, focado em métricas de faturamento, ticket médio e performance de produtos/regiões.
